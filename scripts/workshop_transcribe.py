@@ -12,11 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Google Cloud Speech API sample application using the REST API for batch
-processing.
-
-Example usage: python transcribe.py resources/audio.raw
-"""
+#ADOPTED FROM :
+#"""Google Cloud Speech API sample application using the REST API for batch
+#processing.
+#
+#Example usage: python transcribe.py resources/audio.raw
+#"""
 
 # [START import_libraries]
 import argparse
@@ -32,13 +33,12 @@ import time
 
 # [START authenticating]
 # Application default credentials provided by env variable
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"D:/Projects/python-docs-samples-master/python-docs-samples-master/speech/api-client/datasphere.json"
 def get_speech_service():
     return googleapiclient.discovery.build('speech', 'v1beta1')
 # [END authenticating]
 
 
-def gc_transcribe(speech_file):
+def gc_transcribe(speech_file,sampleRate):
     """Transcribe the given audio file.
 
     Args:
@@ -57,7 +57,7 @@ def gc_transcribe(speech_file):
                 # There are a bunch of config options you can specify. See
                 # https://goo.gl/KPZn97 for the full list.
                 'encoding': 'LINEAR16',  # raw 16-bit signed LE samples
-                'sampleRate': 16000,  # 16 khz
+                'sampleRate': sampleRate,  # 16 khz
                 # See http://g.co/cloud/speech/docs/languages for a list of
                 # supported languages.
                 'languageCode': 'en-US',  # a BCP-47 language tag
@@ -72,7 +72,7 @@ def gc_transcribe(speech_file):
     return(response)
 
 
-def gc_async_transcribe(speech_file):
+def gc_async_transcribe(speech_file,sampleRate):
     """Transcribe the given audio file asynchronously.
 
     Args:
@@ -90,7 +90,7 @@ def gc_async_transcribe(speech_file):
                 # There are a bunch of config options you can specify. See
                 # https://goo.gl/KPZn97 for the full list.
                 'encoding': 'LINEAR16',  # raw 16-bit signed LE samples
-                'sampleRate': 16000,  # 16 khz
+                'sampleRate': sampleRate,  # 16 khz
                 # See http://g.co/cloud/speech/docs/languages for a list of
                 # supported languages.
                 'languageCode': 'en-US',  # a BCP-47 language tag
@@ -127,18 +127,19 @@ def main():
         fieldnames = ['fileName', 'transcript']
         writer = csv.DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
-        source_dir = "otis"
+        source_dir = "resources"
 
         #################
 
         CONFIDENCE_THRESHOLD = 0.5
         i=0
+        SAMPLE_RATE = 8000
 
         for filename in os.listdir(source_dir):
             if filename.endswith(".wav"):
                 print(filename)
                 try:
-                    response = gc_async_transcribe(os.path.join(source_dir,filename))
+                    response = gc_async_transcribe(os.path.join(source_dir,filename),SAMPLE_RATE)
                 except httplib2.ServerNotFoundError:
                     print("ServerNotFoundError : Please check the internet connection")
                     print("%d files converted. Exiting" % i)
