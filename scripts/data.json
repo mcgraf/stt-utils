@@ -1,0 +1,53 @@
+{
+  "@type": "type.googleapis.com\/google.cloud.speech.v1beta1.AsyncRecognizeResponse",
+  "results": [
+    {
+      "alternatives": [
+        {
+          "confidence": 0.7164685,
+          "transcript": "Please input your credit card expiration date followed by the pound you entered September 2020 if this is correct press 1."
+        }
+      ]
+    },
+    {
+      "alternatives": [
+        {
+          "confidence": 0.76052517,
+          "transcript": " Please input the card holders 5 digit billing zip code followed by the pound sign you entered 78573 if this is correct press 1 if incorrect."
+        }
+      ]
+    },
+    {
+      "alternatives": [
+        {
+          "confidence": 0.7561717,
+          "transcript": " Please enter the amount to be paid followed by the pound sign for example press 1600 pound sign for the amount of $16.00."
+        }
+      ]
+    },
+    {
+      "alternatives": [
+        {
+          "confidence": 0.7666377,
+          "transcript": " You entered $132.00 if this is correct press 1 if incorrect."
+        }
+      ]
+    },
+    {
+      "alternatives": [
+        {
+          "confidence": 0.72571474,
+          "transcript": " your payment has been successfully processed your payment confirmation number is 170-328-9468 please use this confirmation number for future reference your account balance will be updated to reflect your current payment within one hour please select from the following ivr options press one to repeat your payment confirmation number press 2"
+        }
+      ]
+    },
+    {
+      "alternatives": [
+        {
+          "confidence": 0.737764,
+          "transcript": " Your payment has been successfully processed your payment confirmation number is 170-328-9468 please use this confirmation number for future reference your account balance will be updated to reflect your current payment within one hour please select from the phone your payment has been successfully processed your payment confirmation number is 170-328-9468 please use this confirmation number for future reference your account balance will be updated to reflect your current payment within one hour please select from the following ivr options press one to repeat your payment confirmation number press 2 to make another payment press 3 to set up an auto pay payment press 8 to end this call press 9 to repeat these options?"
+        }
+      ]
+    }
+  ]
+}
