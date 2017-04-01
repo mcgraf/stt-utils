@@ -29,6 +29,8 @@ import csv
 import googleapiclient.discovery
 import httplib2
 import time
+
+from subprocess import check_output
 # [END import_libraries]
 
 # [START authenticating]
@@ -38,51 +40,12 @@ def get_speech_service():
 # [END authenticating]
 
 
-def gc_transcribe(speech_file,sampleRate):
-    """Transcribe the given audio file.
-
-    Args:
-        speech_file: the name of the audio file.
-    """
-    # [START construct_request]
-    with open(speech_file, 'rb') as speech:
-        # Base64 encode the binary audio file for inclusion in the JSON
-        # request.
-        speech_content = base64.b64encode(speech.read())
-
-    service = get_speech_service()
-    service_request = service.speech().syncrecognize(
-        body={
-            'config': {
-                # There are a bunch of config options you can specify. See
-                # https://goo.gl/KPZn97 for the full list.
-                'encoding': 'LINEAR16',  # raw 16-bit signed LE samples
-                'sampleRate': sampleRate,  # 16 khz
-                # See http://g.co/cloud/speech/docs/languages for a list of
-                # supported languages.
-                'languageCode': 'en-US',  # a BCP-47 language tag
-            },
-            'audio': {
-                'content': speech_content.decode('UTF-8')
-                }
-            })
-    # [END construct_request]
-    # [START send_request]
-    response = service_request.execute()
-    return(response)
-
-
-def gc_async_transcribe(speech_file,sampleRate):
+def gc_async_transcribe(speech_uri):
     """Transcribe the given audio file asynchronously.
 
     Args:
-        speech_file: the name of the audio file.
+        speech_uri: the name of the audio file in google bucket
     """
-    # [START construct_request]
-    with open(speech_file, 'rb') as speech:
-        # Base64 encode the binary audio file for inclusion in the request.
-        speech_content = base64.b64encode(speech.read())
-
     service = get_speech_service()
     service_request = service.speech().asyncrecognize(
         body={
@@ -90,13 +53,12 @@ def gc_async_transcribe(speech_file,sampleRate):
                 # There are a bunch of config options you can specify. See
                 # https://goo.gl/KPZn97 for the full list.
                 'encoding': 'LINEAR16',  # raw 16-bit signed LE samples
-                'sampleRate': sampleRate,  # 16 khz
                 # See http://g.co/cloud/speech/docs/languages for a list of
                 # supported languages.
                 'languageCode': 'en-US',  # a BCP-47 language tag
             },
             'audio': {
-                'content': speech_content.decode('UTF-8')
+                'uri': speech_uri
                 }
             })
     # [END construct_request]
@@ -127,7 +89,13 @@ def main():
         fieldnames = ['fileName', 'transcript']
         writer = csv.DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
-        source_dir = "resources"
+        source_uri = "gs://datasphere-147517.appspot.com/mechanics_workshop/"
+	try:
+		filelist = check_output(["gsutil", "ls",source_uri])
+	except Exception as e:
+		print(e)
+		return 0
+	filelist = filelist.split("\n")
 
         #################
 
@@ -135,11 +103,11 @@ def main():
         i=0
         SAMPLE_RATE = 8000
 
-        for filename in os.listdir(source_dir):
-            if filename.endswith(".wav"):
-                print(filename)
+        for uri in filelist:
+            if uri.endswith(".wav"):
+                print(uri)
                 try:
-                    response = gc_async_transcribe(os.path.join(source_dir,filename),SAMPLE_RATE)
+                    response = gc_async_transcribe(uri)
                 except httplib2.ServerNotFoundError:
                     print("ServerNotFoundError : Please check the internet connection")
                     print("%d files converted. Exiting" % i)
@@ -147,14 +115,14 @@ def main():
 
                 except googleapiclient.errors.HttpError as e:
                     print(str(e))
-                    longFiles.write(filename)
+                    longFiles.write(uri)
                     #response = gc_async_transcribe(os.path.join(vm_dir,filename))
 
                 #response = json.load(open("data.json","rb"))
 
                 #print(json.dumps(response))
                 if not bool(response):
-                    writer.writerow({'fileName': filename, 'transcript': "NA"})
+                    writer.writerow({'fileName': uri, 'transcript': "NA"})
                     continue
                 transcript = []
                 for r in response['results']:
@@ -164,7 +132,7 @@ def main():
                 if not transcript:
                     transcript_full = "NA"
                 transcript_full = "\n".join(transcript)
-                writer.writerow({'fileName': filename, 'transcript': transcript_full})
+                writer.writerow({'fileName': uri, 'transcript': transcript_full})
                 i = i +1
             else:
                 continue
