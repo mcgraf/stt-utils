@@ -84,11 +84,17 @@ def gc_async_transcribe(speech_uri):
 
 def main():
     output = []
-    with open("ResponsesFile_Workshop.csv","wb") as outfile, open("LongAudiofiles.txt","wb") as longFiles:
+    with open("ResponsesFile_Workshop.csv","wb") as outfile, open("trans_confidence.csv","wb") as csvout:
         writer = csv.writer(outfile)
         fieldnames = ['fileName', 'transcript']
         writer = csv.DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
+
+        csvwriter = csv.writer(csvout)
+        fieldnames = ['transcript', 'confidence']
+        csvwriter = csv.DictWriter(csvout, fieldnames=fieldnames)
+        csvwriter.writeheader()
+
         source_uri = "gs://datasphere-147517.appspot.com/mechanics_workshop/"
 	try:
 		filelist = check_output(["gsutil", "ls",source_uri])
@@ -113,22 +119,21 @@ def main():
                     print("%d files converted. Exiting" % i)
                     break
 
-                except googleapiclient.errors.HttpError as e:
+                except Exception as e:
                     print(str(e))
-                    longFiles.write(uri)
-                    #response = gc_async_transcribe(os.path.join(vm_dir,filename))
 
-                #response = json.load(open("data.json","rb"))
-
-                #print(json.dumps(response))
                 if not bool(response):
                     writer.writerow({'fileName': uri, 'transcript': "NA"})
                     continue
                 transcript = []
                 for r in response['results']:
                     confidence = r['alternatives'][0]['confidence']
+                    trans = r['alternatives'][0]['transcript']
+                    csvwriter.writerow('transcript': trans, 'confidence':confidence)
+
                     if(confidence > CONFIDENCE_THRESHOLD):
-                        transcript.append(r['alternatives'][0]['transcript'])
+                        transcript.append(trans)
+
                 if not transcript:
                     transcript_full = "NA"
                 transcript_full = "\n".join(transcript)
