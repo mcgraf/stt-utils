@@ -16,7 +16,6 @@
 #"""Google Cloud Speech API sample application using the REST API for batch
 #processing.
 #
-#Example usage: python transcribe.py resources/audio.raw
 #"""
 
 # [START import_libraries]
@@ -31,6 +30,7 @@ import httplib2
 import time
 
 from subprocess import check_output
+import os
 # [END import_libraries]
 
 # [START authenticating]
@@ -83,19 +83,18 @@ def gc_async_transcribe(speech_uri):
     return(response)
 
 def main():
-    output = []
-    with open("ResponsesFile_Workshop.csv","wb") as outfile, open("trans_confidence.csv","wb") as csvout:
+    source_uri = "gs://datasphere-147517.appspot.com/test_folder/"
+    
+    out_dir = "../output/"+source_uri.replace(".","").split("/")[-2]
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+    with open(os.path.join(out_dir,"Complete_Transcipt_" + source_uri.replace(".","").split("/")[-2] + ".csv"),"wb") as outfile:
         writer = csv.writer(outfile)
         fieldnames = ['fileName', 'transcript']
         writer = csv.DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
 
-        csvwriter = csv.writer(csvout)
-        fieldnames = ['transcript', 'confidence']
-        csvwriter = csv.DictWriter(csvout, fieldnames=fieldnames)
-        csvwriter.writeheader()
-
-        source_uri = "gs://datasphere-147517.appspot.com/mechanics_workshop/"
 	try:
 		filelist = check_output(["gsutil", "ls",source_uri])
 	except Exception as e:
@@ -108,37 +107,43 @@ def main():
         CONFIDENCE_THRESHOLD = 0.5
         i=0
         SAMPLE_RATE = 8000
-
         for uri in filelist:
             if uri.endswith(".wav"):
-                print(uri)
-                try:
-                    response = gc_async_transcribe(uri)
-                except httplib2.ServerNotFoundError:
-                    print("ServerNotFoundError : Please check the internet connection")
-                    print("%d files converted. Exiting" % i)
-                    break
+                with open(os.path.join(out_dir,"transcript_confidence_" + source_uri.split("/")[-1].split[". + ".csv"),"wb") as csvout:
+                    print(uri)
 
-                except Exception as e:
-                    print(str(e))
+                    csvwriter = csv.writer(csvout)
+                    fieldnames = ['transcript', 'confidence']
+                    csvwriter = csv.DictWriter(csvout, fieldnames=fieldnames)
+                    csvwriter.writeheader()
 
-                if not bool(response):
-                    writer.writerow({'fileName': uri, 'transcript': "NA"})
-                    continue
-                transcript = []
-                for r in response['results']:
-                    confidence = r['alternatives'][0]['confidence']
-                    trans = r['alternatives'][0]['transcript']
-                    csvwriter.writerow('transcript': trans, 'confidence':confidence)
+                    try:
+                        response = gc_async_transcribe(uri)
+                    except httplib2.ServerNotFoundError:
+                        print("ServerNotFoundError : Please check the internet connection")
+                        print("%d files converted. Exiting" % i)
+                        break
 
-                    if(confidence > CONFIDENCE_THRESHOLD):
-                        transcript.append(trans)
+                    except Exception as e:
+                        print(str(e))
 
-                if not transcript:
-                    transcript_full = "NA"
-                transcript_full = "\n".join(transcript)
-                writer.writerow({'fileName': uri, 'transcript': transcript_full})
-                i = i +1
+                    if not bool(response):
+                        writer.writerow({'fileName': uri, 'transcript': "NA"})
+                        continue
+                    transcript = []
+                    for r in response['results']:
+                        confidence = r['alternatives'][0]['confidence']
+                        trans = r['alternatives'][0]['transcript']
+                        csvwriter.writerow({'transcript': trans, 'confidence':confidence})
+
+                        if(confidence > CONFIDENCE_THRESHOLD):
+                            transcript.append(trans)
+
+                    if not transcript:
+                        transcript_full = "NA"
+                    transcript_full = "\n".join(transcript)
+                    writer.writerow({'fileName': uri, 'transcript': transcript_full})
+                    i = i +1
             else:
                 continue
 # [START run_application]
